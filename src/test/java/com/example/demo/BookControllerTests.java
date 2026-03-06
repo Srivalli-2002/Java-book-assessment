@@ -12,8 +12,10 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.example.demo.service.BookService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -25,6 +27,8 @@ class BookControllerTests {
     private WebApplicationContext context;
     @Autowired
     private BookRepository bookRepository;
+    @Autowired
+    private BookService bookService;
 
     @BeforeEach
     void setup() {
@@ -39,5 +43,13 @@ class BookControllerTests {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].title").value("Spring in Action"))
             .andExpect(jsonPath("$[1].title").value("Effective Java"));
+    }
+
+    @Test
+    void testAddBookFromGoogle() throws Exception {
+
+        mockMvc.perform(post("/books/lRtdEAAAQBAJ"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("lRtdEAAAQBAJ"));
     }
 }

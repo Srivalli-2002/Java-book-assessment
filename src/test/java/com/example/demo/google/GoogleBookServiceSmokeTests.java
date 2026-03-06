@@ -34,4 +34,16 @@ class GoogleBookServiceSmokeTests {
         assertThat(first.searchInfo()).isNotNull();
         assertThat(first.searchInfo().textSnippet()).isNotNull();
     }
+
+    @Test
+    void getBookById_effectiveJava_returnsBookDetails() {
+        GoogleBook.Item item = googleBookService.getBookById("12muzgEACAAJ");
+
+        assertThat(item).isNotNull();
+        assertThat(item.id()).isEqualTo("12muzgEACAAJ");
+        assertThat(item.selfLink()).isNotBlank();
+        assertThat(item.volumeInfo()).isNotNull();
+        assertThat(item.volumeInfo().title()).isEqualTo("Effective Java");
+        assertThat(item.volumeInfo().authors()).isNotNull();
+    }
 }

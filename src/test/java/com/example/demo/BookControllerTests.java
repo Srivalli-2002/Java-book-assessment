@@ -2,54 +2,93 @@ package com.example.demo;
 
 import com.example.demo.db.Book;
 import com.example.demo.db.BookRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
-import org.springframework.test.web.servlet.MockMvc;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.example.demo.google.GoogleBook;
+import com.example.demo.google.GoogleBookService;
 import com.example.demo.service.BookService;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-class BookControllerTests {
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private WebApplicationContext context;
-    @Autowired
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.http.ResponseEntity;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class BookControllerTest {
+
+    @Mock
     private BookRepository bookRepository;
-    @Autowired
+
+    @Mock
+    private GoogleBookService googleBookService;
+
+    @Mock
     private BookService bookService;
 
-    @BeforeEach
-    void setup() {
-        bookRepository.deleteAll();
-        bookRepository.save(new Book("lRtdEAAAQBAJ", "Spring in Action", "Craig Walls"));
-        bookRepository.save(new Book("12muzgEACAAJ", "Effective Java", "Joshua Bloch"));
+    @InjectMocks
+    private BookController bookController;
+
+    @Test
+    void getAllBooks_returnsBooks() {
+
+        Book book = new Book();
+        book.setId("1");
+        book.setTitle("Effective Java");
+        book.setAuthor("Joshua Bloch");
+        book.setPageCount(400);
+
+        when(bookRepository.findAll()).thenReturn(List.of(book));
+
+        List<Book> result = bookController.getAllBooks();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTitle()).isEqualTo("Effective Java");
+
+        verify(bookRepository).findAll();
     }
 
     @Test
-    void testGetAllBooks() throws Exception {
-        mockMvc.perform(get("/books"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].title").value("Spring in Action"))
-            .andExpect(jsonPath("$[1].title").value("Effective Java"));
+    void searchGoogleBooks_returnsGoogleBooks() {
+
+        GoogleBook googleBook =
+                new GoogleBook(
+                        "books#volumes",
+                        1,
+                        List.of()
+                );
+
+        when(googleBookService.searchBooks("java", null, null))
+                .thenReturn(googleBook);
+
+        GoogleBook result = bookController.searchGoogleBooks("java", null, null);
+
+        assertThat(result.totalItems()).isEqualTo(1);
+
+        verify(googleBookService).searchBooks("java", null, null);
     }
 
     @Test
-    void testAddBookFromGoogle() throws Exception {
+    void addBook_returnsCreatedBook() {
 
-        mockMvc.perform(post("/books/lRtdEAAAQBAJ"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("lRtdEAAAQBAJ"));
+        Book book = new Book();
+        book.setId("123");
+        book.setTitle("Effective Java");
+        book.setAuthor("Joshua Bloch");
+
+        when(bookService.addBookFromGoogle("123")).thenReturn(book);
+
+        ResponseEntity<Book> response = bookController.addBook("123");
+
+        assertThat(response.getStatusCode().value()).isEqualTo(201);
+        assertThat(response.getBody().getTitle()).isEqualTo("Effective Java");
+
+        verify(bookService).addBookFromGoogle("123");
     }
 }
